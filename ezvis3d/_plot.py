@@ -12,12 +12,12 @@ from scripts import JS_JSON_PARSE_OPTION, JS_JSON_PARSE_DATA
 
 
 
-def html(data, options, center=False, save=False):
+def html(data, options, graph_type=None, center=False, save=False):
     """
     save=True will create a standalone HTML doc under localdir/saved (creating folfer save if necessary)
     center=True will center the plot in the output cell, otherwise left-aligned by default.
     """
-    
+
     def json_dumps(obj):
         return pd.io.json.dumps(obj)
 
@@ -37,10 +37,10 @@ def html(data, options, center=False, save=False):
             _options[key] = new_str
 
 
-    clean_function_str('tooltip') 
-    clean_function_str('xValueLabel') 
-    clean_function_str('yValueLabel') 
-    clean_function_str('zValueLabel') 
+    clean_function_str('tooltip')
+    clean_function_str('xValueLabel')
+    clean_function_str('yValueLabel')
+    clean_function_str('zValueLabel')
 
 
     chart_id = str(uuid.uuid4()).replace('-', '_')
@@ -51,21 +51,31 @@ def html(data, options, center=False, save=False):
     %s
     window.opt = jQuery.extend(true, {}, options);
     console.log('vis3d options accessible as opt');
-    
+
     var data = %s;
     %s
     window.dta = jQuery.extend(true, [], data);
     console.log('vis3d data accessible as dta');
     """ % (json_dumps(_options), JS_JSON_PARSE_OPTION,
-           json_dumps(_data), JS_JSON_PARSE_DATA) 
+           json_dumps(_data), JS_JSON_PARSE_DATA)
 
-    
+
     js_call = """
     var container = document.getElementById('%s');
     console.log(options);
     console.log(data);
     graph3d = new vis.Graph3d(container, data, options);
     """ % (chart_id)
+
+    if graph_type == "graph3d" or graph_type == None:
+        js_call = js_call + """
+        graph3d = new vis.Graph3d(container, data, options);
+        """
+
+    elif graph_type == "timeline":
+        js_call = js_call + """
+        graph3d = new vis.Timeline(container, data, options);
+        """
 
 
 
@@ -95,7 +105,7 @@ def html(data, options, center=False, save=False):
         %s
     });
     </script>""" % (JS_LIBS_ONE, js_init, js_call)
-    
+
     if save==True:
         if not os.path.exists('saved'):
             os.makedirs('saved')
@@ -106,16 +116,13 @@ def html(data, options, center=False, save=False):
             %s
             """ % (JS_SAVE[0], JS_SAVE[1], html+js)
             f.write(contents)
-    
+
     return html+css+js
 
-    
+
 
 
 
 def plot(data, options, center=False, save=False):
     contents = html(data, options, center, save)
     return HTML(contents)
-
-  
-
